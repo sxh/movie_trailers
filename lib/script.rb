@@ -93,7 +93,18 @@ class TrailerVideo
 end
 
 [
-  ['Jack Reacher', 2012]
+  ['A History of Violence', 2005],
+  ['City of God', 2002],
+  ['E.T. the Extra-Terrestrial', 1982],
+  ['End of Sentence', 2019],
+  ['Far from Heaven', 2002],
+  ['Lantana', 2001],
+  ['Praise', 1998],
+  ['Sex, Lies, and Videotape', 1989],
+  ['The Long Kiss Goodnight', 1996],
+  ['The Whistlers', 2019],
+  ['While We Were Young', 2014],
+  ['Working Man', 2020]
 ].each do |name, year|
   Search.new(name, year).movies.each do |movie|
     movie.videos.trailers.each(&:download)
