@@ -32,14 +32,18 @@ class MovieDb
     base_url + api_base + auth + query_parameters
   end
 
+  def api_page_from(api_base, query_parameters = '')
+    agent.get(api_url_from(api_base, query_parameters))
+  end
+
 end
 
 # result of calling the videos api for a given movie
 class MovieVideos < MovieDb
 
   def initialize(movie_id)
-    url = api_url_from("/movie/#{movie_id}/videos")
-    super(agent.get(url))
+    page= api_page_from("/movie/#{movie_id}/videos")
+    super(page)
   end
 
   def youtube_ids
@@ -70,9 +74,7 @@ end
 class Search < MovieDb
 
   def initialize(name, year)
-    api_key = '9c762f8e2cb0c83962e7c51008e43906'
-    # agent = Mechanize.new
-    page = agent.get("https://api.themoviedb.org/3/search/movie?api_key=#{api_key}&query=#{CGI.escape(name)}&year=#{year}")
+    page = api_page_from("/search/movie", "&query=#{CGI.escape(name)}&year=#{year}")
     super(page)
   end
 
