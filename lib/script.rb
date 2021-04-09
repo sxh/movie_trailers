@@ -16,7 +16,7 @@ class MovieDb
 end
 
 # result of calling the videos api for a given movie
-class Videos < MovieDb
+class MovieVideos < MovieDb
 
   # def initialize(mechanize_page)
   #   @json = JSON.parse(mechanize_page.body)
@@ -40,7 +40,7 @@ class Movie
     api_key = '9c762f8e2cb0c83962e7c51008e43906'
     agent = Mechanize.new
     page = agent.get("https://api.themoviedb.org/3/movie/#{@movie_id}/videos?api_key=#{api_key}")
-    Videos.new(page)
+    MovieVideos.new(page)
   end
 
 end
@@ -67,7 +67,18 @@ class Search < MovieDb
 
 end
 
-agent = Mechanize.new
+class Trailer
+
+  def initialize(youtube_video_id)
+    @vid = youtube_video_id
+  end
+
+  def download
+    system("youtube-dl -o '~/Movies/%(title)s-trailer.%(ext)s' #{@vid} --restrict-filenames", exception: true)
+  end
+
+end
+
 search = Search.new()
 pp search.movie_ids
 
@@ -75,25 +86,7 @@ search.movies.each do |movie|
   # page = agent.get("https://api.themoviedb.org/3/movie/#{movie_id}/videos?api_key=#{api_key}")
   trailer_ids = movie.videos.youtube_ids
   trailer_ids.each do |vid|
-    # retrieve and put in Movies
-    system("youtube-dl -o '~/Movies/%(title)s-trailer.%(ext)s' #{vid} --restrict-filenames", exception: true)
+    Trailer.new(vid).download
   end
   pp trailer_ids
 end
-
-# youtube-dl -o '%(title)s-trailer.%(ext)s' BdJKm16Co6M --restrict-filenames
-
-# require 'youtube_dl'
-# youtube = YoutubeDl::YoutubeVideo.new("https://www.youtube.com/watch?v=zzG4K2m_j5U")
-# video = youtube.download_video
-# => "tmp/downloads/zzG4K2m_j5U.mp4"
-# preview = youtube.download_preview
-# => "tmp/downloads/zzG4K2m_j5U.jpg"
-
-
-# https://api.themoviedb.org/3/search/movie?api_key={api_key}&query=Jack+Reacher
-#
-# https://api.themoviedb.org/3/movie/550?api_key=9c762f8e2cb0c83962e7c51008e43906
-#
-# https://api.themoviedb.org/3/movie/550/videos?api_key=9c762f8e2cb0c83962e7c51008e43906
-
