@@ -30,24 +30,50 @@ class Videos < MovieDb
 
 end
 
+class Movie
+
+  def initialize(movie_id)
+    @movie_id = movie_id
+  end
+
+  def videos
+    api_key = '9c762f8e2cb0c83962e7c51008e43906'
+    agent = Mechanize.new
+    page = agent.get("https://api.themoviedb.org/3/movie/#{@movie_id}/videos?api_key=#{api_key}")
+    Videos.new(page)
+  end
+
+end
+
 # result of calling the a search
 class Search < MovieDb
+
+  def initialize()
+    api_key = '9c762f8e2cb0c83962e7c51008e43906'
+    agent = Mechanize.new
+    name = 'Jack Reacher'
+    year = 2012
+    page = agent.get("https://api.themoviedb.org/3/search/movie?api_key=#{api_key}&query=#{CGI.escape(name)}&year=#{year}")
+    super(page)
+  end
 
   def movie_ids
     results.collect{ |each| each['id'] }
   end
 
+  def movies
+    movie_ids.collect{ |each| Movie.new(each) }
+  end
+
 end
 
 agent = Mechanize.new
-name = 'Jack Reacher'
-year = 2012
-page = agent.get("https://api.themoviedb.org/3/search/movie?api_key=#{api_key}&query=#{CGI.escape(name)}&year=#{year}")
-search = Search.new(page)
+search = Search.new()
 pp search.movie_ids
-search.movie_ids.each do |movie_id|
-  page = agent.get("https://api.themoviedb.org/3/movie/#{movie_id}/videos?api_key=#{api_key}")
-  trailer_ids = Videos.new(page).youtube_ids
+
+search.movies.each do |movie|
+  # page = agent.get("https://api.themoviedb.org/3/movie/#{movie_id}/videos?api_key=#{api_key}")
+  trailer_ids = movie.videos.youtube_ids
   trailer_ids.each do |vid|
     # retrieve and put in Movies
     system("youtube-dl -o '~/Movies/%(title)s-trailer.%(ext)s' #{vid} --restrict-filenames", exception: true)
