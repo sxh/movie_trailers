@@ -88,7 +88,11 @@ class TrailerVideo
   end
 
   def download
-    system("youtube-dl -o '~/Movies/%(title)s-trailer.%(ext)s' #{@vid} --restrict-filenames", exception: true)
+    begin
+      system("youtube-dl -o '~/Movies/%(title)s-trailer.%(ext)s' #{@vid} --restrict-filenames", exception: true)
+    rescue Exception => e
+      puts e.to_s
+    end
   end
 end
 
