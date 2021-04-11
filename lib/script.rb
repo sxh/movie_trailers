@@ -21,7 +21,8 @@ class MovieDirectory
   def has_trailer?
     @pathname.children.reject(&:directory?).collect{|e| MovieFile.new(e)}.any?(&:is_trailer?)
   end
-  def name
+
+  def basename
     File.basename(@pathname)
   end
 end
@@ -41,9 +42,35 @@ class MovieFile
 
 end
 
+class MovieDirectoryName
+  def initialize(name)
+    @name = name
+  end
+
+  def year
+    year_substring_no_parens.to_i
+  end
+
+  def movie_name
+    @name.gsub(year_substring, '').strip
+  end
+
+  private
+
+  def year_substring
+    @name[/\(\d+\)/]
+  end
+
+  def year_substring_no_parens
+    year_substring[1..-2]
+  end
+
+end
 MovieLibrary.new.movie_directories.reject(&:has_trailer?).each do |dir|
-  pp dir.name
+  pp dir.basename
   pp dir.has_trailer?
+  pp MovieDirectoryName.new(dir.basename).year
+  pp MovieDirectoryName.new(dir.basename).movie_name
 end
 
 
