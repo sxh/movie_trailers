@@ -50,9 +50,14 @@ module TheMovieDb
     private
 
     def trailer_youtube_ids
-      results
+      ids = results
         .select { |each| each['type'].eql?('Trailer') && each['site'].eql?('YouTube') }
         .collect { |each| each['key'] }
+      if ids.empty? then
+        puts "Didn't find any trailer information using #{api_called}"
+        puts "Json returned was #{json}"
+      end
+      ids
     end
   end
 
