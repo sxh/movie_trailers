@@ -36,11 +36,11 @@ class MovieDirectoryName
     @name = name
   end
 
-  def move_year
+  def year
     year_substring_no_parens.to_i
   end
 
-  def movie_name
+  def movie
     @name.gsub(year_substring, '').strip
   end
 

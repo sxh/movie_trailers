@@ -5,8 +5,12 @@ require_relative 'movie_nas'
 
 MovieLibrary.new.movie_directories.reject(&:has_trailer?).each do |dir|
   pp dir.has_trailer?
-  pp dir.name.move_year
-  pp dir.name.movie_name
+  pp dir.name.year
+  pp dir.name.movie
+  Search.new(dir.name.movie, dir.name.year).movies.each do |movie|
+    movie.videos.trailers.each(&:download)
+  end
+
 end
 
 
