@@ -6,9 +6,14 @@ require 'json'
 module TheMovieDb
   # utility class for anything retrieved from The MovieDB api
   class MovieDbApi
+
+    attr_reader :api_called, :api_results, :json
+
     def initialize(api_base, query_parameters = '')
-      page = api_page_from(api_base, query_parameters)
-      @json = JSON.parse(page.body)
+      @api_called = api_url_from(api_base, query_parameters)
+      page = Mechanize.new.get(@api_called)
+      @api_results = page.body
+      @json = JSON.parse(api_results)
     end
 
     def results
@@ -30,9 +35,6 @@ module TheMovieDb
       base_url + api_base + auth + query_parameters
     end
 
-    def api_page_from(api_base, query_parameters = '')
-      Mechanize.new.get(api_url_from(api_base, query_parameters))
-    end
   end
 
   # result of calling the videos api for a given movie
@@ -61,7 +63,12 @@ module TheMovieDb
     end
 
     def movies
-      movie_ids.collect { |each| Movie.new(each) }
+      results = movie_ids.collect { |each| Movie.new(each) }
+      if results.empty?
+        puts "Nothing movies found searching #{api_called}"
+        puts "Json returned was #{json}"
+      end
+      results
     end
 
     private
