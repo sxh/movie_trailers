@@ -1,116 +1,67 @@
 # frozen_string_literal: true
 
-require 'mechanize'
-require 'json'
+require_relative 'movie_db'
+require 'pathname'
 
-# utility class for anything retrieved from The MovieDB api
-class MovieDbApi
-  def initialize(api_base, query_parameters = '')
-    page = api_page_from(api_base, query_parameters)
-    @json = JSON.parse(page.body)
+class MovieLibrary
+  def initialize
+    @base_directory = "/Volumes/Media/Movies"
   end
 
-  def results
-    @json['results']
+  def movie_directories
+    Pathname('/Volumes/Media/Movies').children.select(&:directory?).collect{|e| MovieDirectory.new(e)}
   end
 
-  private
+end
 
-  def base_url
-    'https://api.themoviedb.org/3'
+class MovieDirectory
+  def initialize(pathname)
+    @pathname = pathname
   end
-
-  def auth
-    api_key = '9c762f8e2cb0c83962e7c51008e43906'
-    "?api_key=#{api_key}"
+  def has_trailer?
+    @pathname.children.reject(&:directory?).collect{|e| MovieFile.new(e)}.any?(&:is_trailer?)
   end
-
-  def api_url_from(api_base, query_parameters = '')
-    base_url + api_base + auth + query_parameters
-  end
-
-  def api_page_from(api_base, query_parameters = '')
-    Mechanize.new.get(api_url_from(api_base, query_parameters))
+  def name
+    File.basename(@pathname)
   end
 end
 
-# result of calling the videos api for a given movie
-class MovieVideos < MovieDbApi
-  def initialize(movie_id)
-    super("/movie/#{movie_id}/videos")
+class MovieFile
+  def initialize(pathname)
+    @pathname = pathname
   end
 
-  def trailers
-    trailer_youtube_ids.collect { |each| TrailerVideo.new(each) }
+  def is_trailer?
+    basename_without_ext.end_with?('-trailer')
   end
 
-  private
-
-  def trailer_youtube_ids
-    results
-      .select { |each| each['type'].eql?('Trailer') && each['site'].eql?('YouTube') }
-      .collect { |each| each['key'] }
+  def basename_without_ext
+    File.basename(@pathname, ".*")
   end
+
 end
 
-# result of calling the a search
-class Search < MovieDbApi
-  def initialize(name, year)
-    super('/search/movie', "&query=#{CGI.escape(name)}&year=#{year}")
-  end
-
-  def movies
-    movie_ids.collect { |each| Movie.new(each) }
-  end
-
-  private
-
-  def movie_ids
-    results.collect { |each| each['id'] }
-  end
+MovieLibrary.new.movie_directories.reject(&:has_trailer?).each do |dir|
+  pp dir.name
+  pp dir.has_trailer?
 end
 
-# Single movie, source of all related videos
-class Movie
-  def initialize(movie_id)
-    @movie_id = movie_id
-  end
 
-  def videos
-    MovieVideos.new(@movie_id)
-  end
-end
-
-# Single video, that we believe is a trailer
-class TrailerVideo
-  def initialize(youtube_video_id)
-    @vid = youtube_video_id
-  end
-
-  def download
-    begin
-      system("youtube-dl -o '~/Movies/%(title)s-trailer.%(ext)s' #{@vid} --restrict-filenames", exception: true)
-    rescue Exception => e
-      puts e.to_s
-    end
-  end
-end
-
-[
-  ['A History of Violence', 2005],
-  ['City of God', 2002],
-  ['E.T. the Extra-Terrestrial', 1982],
-  ['End of Sentence', 2019],
-  ['Far from Heaven', 2002],
-  ['Lantana', 2001],
-  ['Praise', 1998],
-  ['Sex, Lies, and Videotape', 1989],
-  ['The Long Kiss Goodnight', 1996],
-  ['The Whistlers', 2019],
-  ['While We Were Young', 2014],
-  ['Working Man', 2020]
-].each do |name, year|
-  Search.new(name, year).movies.each do |movie|
-    movie.videos.trailers.each(&:download)
-  end
-end
+# [
+#   ['A History of Violence', 2005],
+#   ['City of God', 2002],
+#   ['E.T. the Extra-Terrestrial', 1982],
+#   ['End of Sentence', 2019],
+#   ['Far from Heaven', 2002],
+#   ['Lantana', 2001],
+#   ['Praise', 1998],
+#   ['Sex, Lies, and Videotape', 1989],
+#   ['The Long Kiss Goodnight', 1996],
+#   ['The Whistlers', 2019],
+#   ['While We Were Young', 2014],
+#   ['Working Man', 2020]
+# ].each do |name, year|
+#   Search.new(name, year).movies.each do |movie|
+#     movie.videos.trailers.each(&:download)
+#   end
+# end
