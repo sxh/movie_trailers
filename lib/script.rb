@@ -12,3 +12,5 @@ MovieLibrary.new('/Volumes/Media/Movies').movie_directories.reject(&:has_trailer
     movie.videos.best_trailer&.download_to(movie_directory.path)
   end
 end
+
+puts "Finished scanning movies for trailers"
