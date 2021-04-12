@@ -3,8 +3,8 @@
 require 'pathname'
 
 class MovieLibrary
-  def initialize
-    @base_directory = "/Volumes/Media/Movies"
+  def initialize(base_path_string)
+    @base_directory = base_path_string
   end
 
   def movie_directories
@@ -23,6 +23,10 @@ class MovieDirectory
 
   def name
     MovieDirectoryName.new(basename)
+  end
+
+  def path
+    @pathname.to_s
   end
 
   private
