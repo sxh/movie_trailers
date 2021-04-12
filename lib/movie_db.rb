@@ -100,8 +100,9 @@ module TheMovieDb
       @vid = youtube_video_id
     end
 
-    def download
-      system("youtube-dl -o '~/Movies/%(title)s-trailer.%(ext)s' #{@vid} --restrict-filenames", exception: true)
+    def download_to(path)
+      destination = path + '/%(title)s-trailer.%(ext)s'
+      system("youtube-dl -o '#{destination}' #{@vid} --restrict-filenames", exception: true)
     rescue Exception => e
       puts e.to_s
     end
