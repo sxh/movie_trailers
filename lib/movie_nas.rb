@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-#
+
 require 'pathname'
 
 class MovieLibrary
@@ -8,17 +8,17 @@ class MovieLibrary
   end
 
   def movie_directories
-    Pathname('/Volumes/Media/Movies').children.select(&:directory?).collect{|e| MovieDirectory.new(e)}
+    Pathname('/Volumes/Media/Movies').children.select(&:directory?).collect { |e| MovieDirectory.new(e) }
   end
-
 end
 
 class MovieDirectory
   def initialize(pathname)
     @pathname = pathname
   end
+
   def has_trailer?
-    @pathname.children.reject(&:directory?).collect{|e| MovieFile.new(e)}.any?(&:is_trailer?)
+    @pathname.children.reject(&:directory?).collect { |e| MovieFile.new(e) }.any?(&:is_trailer?)
   end
 
   def name
@@ -30,6 +30,7 @@ class MovieDirectory
   end
 
   private
+
   def basename
     File.basename(@pathname)
   end
@@ -57,7 +58,6 @@ class MovieDirectoryName
   def year_substring_no_parens
     year_substring[1..-2]
   end
-
 end
 
 class MovieFile
@@ -70,9 +70,6 @@ class MovieFile
   end
 
   def basename_without_ext
-    File.basename(@pathname, ".*")
+    File.basename(@pathname, '.*')
   end
-
 end
-
-

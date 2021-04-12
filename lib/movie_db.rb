@@ -6,7 +6,6 @@ require 'json'
 module TheMovieDb
   # utility class for anything retrieved from The MovieDB api
   class MovieDbApi
-
     attr_reader :api_called, :api_results, :json
 
     def initialize(api_base, query_parameters = '')
@@ -34,30 +33,31 @@ module TheMovieDb
     def api_url_from(api_base, query_parameters = '')
       base_url + api_base + auth + query_parameters
     end
-
   end
 
   # result of calling the videos api for a given movie
   class MovieVideos < MovieDbApi
-    def initialize(movie_id)
-      super("/movie/#{movie_id}/videos")
+    def initialize(tmdb_movie_id)
+      super("/movie/#{tmdb_movie_id}/videos")
     end
 
     def trailers
-      trailer_youtube_ids.collect { |each| TrailerVideo.new(each) }
+      trailer_results.collect { |each| TrailerVideo.new(each['key'], each['size']) }
+    end
+
+    def best_trailer
+      trailers.max_by(&:size)
     end
 
     private
 
-    def trailer_youtube_ids
-      ids = results
-        .select { |each| each['type'].eql?('Trailer') && each['site'].eql?('YouTube') }
-        .collect { |each| each['key'] }
-      if ids.empty? then
+    def trailer_results
+      filtered = results.select { |each| each['type'].eql?('Trailer') && each['site'].eql?('YouTube') }
+      if filtered.empty?
         puts "Didn't find any trailer information using #{api_called}"
         puts "Json returned was #{json}"
       end
-      ids
+      filtered
     end
   end
 
@@ -86,22 +86,25 @@ module TheMovieDb
   # Single movie, source of all related videos
   class Movie
     def initialize(movie_id)
-      @movie_id = movie_id
+      @tmdb_movie_id = movie_id
     end
 
     def videos
-      MovieVideos.new(@movie_id)
+      MovieVideos.new(@tmdb_movie_id)
     end
   end
 
   # Single video, that we believe is a trailer
   class TrailerVideo
-    def initialize(youtube_video_id)
+    attr_reader :size
+
+    def initialize(youtube_video_id, size)
       @vid = youtube_video_id
+      @size = size
     end
 
     def download_to(path)
-      destination = path + '/%(title)s-trailer.%(ext)s'
+      destination = "#{path}/%(title)s-trailer.%(ext)s"
       system("youtube-dl -o '#{destination}' #{@vid} --restrict-filenames", exception: true)
     rescue Exception => e
       puts e.to_s
