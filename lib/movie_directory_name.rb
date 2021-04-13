@@ -1,18 +1,19 @@
+# frozen_string_literal: true
+
 require 'forwardable'
 
+# Wrapper around a particular strategy
 class MovieDirectoryName
-
   extend Forwardable
   def_delegators :@delegate, :year, :movie
 
   def initialize(name)
-    @delegate = MovieDirectoryNameWithYearInParentheses.new(name)
+    @delegate = MovieDirectoryNameWithParenthesisedYear.new(name)
   end
-
 end
 
-class MovieDirectoryNameWithYearInParentheses
-
+# Something like 'Spontaneous (2020)'
+class MovieDirectoryNameWithParenthesisedYear
   def initialize(name)
     @name = name
   end
@@ -34,5 +35,4 @@ class MovieDirectoryNameWithYearInParentheses
   def year_substring_no_parens
     year_substring[1..-2]
   end
-
 end
