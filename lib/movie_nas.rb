@@ -2,6 +2,8 @@
 
 require 'pathname'
 
+require_relative 'movie_directory_name'
+
 class MovieLibrary
   def initialize(base_path_string)
     @base_directory = base_path_string
@@ -36,29 +38,6 @@ class MovieDirectory
   end
 end
 
-class MovieDirectoryName
-  def initialize(name)
-    @name = name
-  end
-
-  def year
-    year_substring_no_parens.to_i
-  end
-
-  def movie
-    @name.gsub(year_substring, '').strip
-  end
-
-  private
-
-  def year_substring
-    @name[/\(\d+\)/]
-  end
-
-  def year_substring_no_parens
-    year_substring[1..-2]
-  end
-end
 
 class MovieFile
   def initialize(pathname)
