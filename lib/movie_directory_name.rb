@@ -9,6 +9,17 @@ class Regexp
   end
 end
 
+class String
+  def without_domain_names
+    gsub(/www\..*\.org/, '')
+  end
+
+  def without_dots
+    gsub('.', ' ')
+  end
+
+end
+
 module MovieNas
   # Common regular expressions for movie years
   module YearRegexps
@@ -73,7 +84,7 @@ module MovieNas
     include YearRegexps
 
     def initialize(name)
-      super(name.gsub('.', ' '))
+      super(name.without_domain_names.without_dots)
     end
 
     def year
