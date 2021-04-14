@@ -1,5 +1,6 @@
 require 'movie_directory_name'
 
+module MovieNas
 describe MovieDirectoryName do
 
   it 'should parse names like Spontaneous (2020)' do
@@ -20,7 +21,5 @@ describe MovieDirectoryName do
     expect(name.year).to eql(2017)
   end
 
-  #
-
-
+end
 end

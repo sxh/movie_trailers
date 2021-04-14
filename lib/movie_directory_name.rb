@@ -9,6 +9,7 @@ class Regexp
   end
 end
 
+module MovieNas
 # Common regular expressions for movie years
 module YearRegexps
   def year_only_regexp
@@ -84,4 +85,5 @@ class DottedName < NameWithYear
   def year_regexp
     year_only_regexp
   end
+end
 end

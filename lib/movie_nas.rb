@@ -4,6 +4,7 @@ require 'pathname'
 
 require_relative 'movie_directory_name'
 
+module MovieNas
 class MovieLibrary
   def initialize(base_path_string)
     @base_directory = base_path_string
@@ -51,4 +52,5 @@ class MovieFile
   def basename_without_ext
     File.basename(@pathname, '.*')
   end
+end
 end
