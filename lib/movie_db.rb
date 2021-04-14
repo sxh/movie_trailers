@@ -4,6 +4,39 @@ require 'mechanize'
 require 'json'
 
 module TheMovieDb
+  class MovieDbMonitor
+
+    def self.minimal
+      MovieDbMonitor.new(false)
+    end
+
+    def initialize(debug)
+      @debug = debug
+    end
+
+    def no_trailers_found(movie_videos)
+      put_always "Didn't find any trailer information using #{movie_videos.api_called}"
+      put_always "Json returned was #{movie_videos.json}"
+    end
+
+    def no_movies_found(search)
+      put_always "Nothing movies found searching #{search.api_called}"
+      put_always "Json returned was #{search.json}"
+    end
+
+    def youtube_download_exception(trailer_video, exception)
+      put_always(exception.to_s)
+    end
+
+    def put_always(string)
+      puts string
+    end
+
+    def put_maybe(string)
+      put_always(string) if @debug
+    end
+  end
+
   # utility class for anything retrieved from The MovieDB api
   class MovieDbApi
     attr_reader :api_called, :api_results, :json
@@ -37,12 +70,13 @@ module TheMovieDb
 
   # result of calling the videos api for a given movie
   class MovieVideos < MovieDbApi
-    def initialize(tmdb_movie_id)
+    def initialize(monitor, tmdb_movie_id)
       super("/movie/#{tmdb_movie_id}/videos")
+      @monitor = monitor
     end
 
     def trailers
-      trailer_results.collect { |each| TrailerVideo.new(each['key'], each['size']) }
+      trailer_results.collect { |each| TrailerVideo.new(@monitor, each['key'], each['size']) }
     end
 
     def best_trailer
@@ -54,8 +88,7 @@ module TheMovieDb
     def trailer_results
       filtered = results.select { |each| each['type'].eql?('Trailer') && each['site'].eql?('YouTube') }
       if filtered.empty?
-        puts "Didn't find any trailer information using #{api_called}"
-        puts "Json returned was #{json}"
+        @monitor.no_trailers_found(self)
       end
       filtered
     end
@@ -63,15 +96,15 @@ module TheMovieDb
 
   # result of calling the a search
   class Search < MovieDbApi
-    def initialize(name, year)
+    def initialize(monitor, name, year)
       super('/search/movie', "&query=#{CGI.escape(name)}&year=#{year}")
+      @monitor = monitor
     end
 
     def movies
-      results = movie_ids.collect { |each| Movie.new(each) }
+      results = movie_ids.collect { |each| Movie.new(@monitor, each) }
       if results.empty?
-        puts "Nothing movies found searching #{api_called}"
-        puts "Json returned was #{json}"
+        @monitor.no_movies_found(self)
       end
       results
     end
@@ -85,12 +118,13 @@ module TheMovieDb
 
   # Single movie, source of all related videos
   class Movie
-    def initialize(movie_id)
+    def initialize(monitor, movie_id)
+      @monitor = monitor
       @tmdb_movie_id = movie_id
     end
 
     def videos
-      MovieVideos.new(@tmdb_movie_id)
+      MovieVideos.new(@monitor, @tmdb_movie_id)
     end
   end
 
@@ -98,16 +132,17 @@ module TheMovieDb
   class TrailerVideo
     attr_reader :size
 
-    def initialize(youtube_video_id, size)
+    def initialize(monitor, youtube_video_id, size)
       @vid = youtube_video_id
       @size = size
+      @monitor = monitor
     end
 
     def download_to(path)
       destination = "#{path}/%(title)s-trailer.%(ext)s"
       system("youtube-dl -o \"#{destination}\" #{@vid} --restrict-filenames", exception: true)
     rescue Exception => e
-      puts e.to_s
+      @monitor.youtube_download_exception(self, e)
     end
   end
 end
