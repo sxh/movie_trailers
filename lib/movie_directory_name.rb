@@ -14,6 +14,10 @@ class String
     gsub(/www\..*\.org/, '')
   end
 
+  def without_dashes
+    gsub('-', ' ')
+  end
+
   def without_dots
     gsub('.', ' ')
   end
@@ -84,7 +88,7 @@ module MovieNas
     include YearRegexps
 
     def initialize(name)
-      super(name.without_domain_names.without_dots)
+      super(name.without_domain_names.without_dashes.without_dots)
     end
 
     def year
