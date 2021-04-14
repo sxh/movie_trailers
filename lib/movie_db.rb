@@ -37,6 +37,9 @@ module TheMovieDb
       put_maybe "Json returned was #{search.json}"
     end
 
+    def mechanize_exception(url_string)
+      put_always "Exception while getting page #{url_string}"
+    end
     def put_always(string)
       puts string
     end
@@ -48,18 +51,19 @@ module TheMovieDb
 
   # utility class for anything retrieved from The MovieDB api
   class MovieDbApi
-    attr_reader :api_called, :api_results, :json
+    attr_reader :api_called, :api_results, :json, :monitor
 
-    def initialize(api_base, query_parameters = '')
+    def initialize(monitor, api_base, query_parameters = '')
       @api_called = api_url_from(api_base, query_parameters)
       begin
         page = Mechanize.new.get(@api_called)
       rescue Exception => e
-        puts "Exception while getting page #{@api_called}"
+        monitor.mechanize_exception(@api_called)
         raise e
       end
       @api_results = page.body
       @json = JSON.parse(api_results)
+      @monitor = monitor
     end
 
     def results
@@ -85,12 +89,11 @@ module TheMovieDb
   # result of calling the videos api for a given movie
   class MovieVideos < MovieDbApi
     def initialize(monitor, tmdb_movie_id)
-      super("/movie/#{tmdb_movie_id}/videos")
-      @monitor = monitor
+      super(monitor,"/movie/#{tmdb_movie_id}/videos")
     end
 
     def trailers
-      trailer_results.collect { |each| TrailerVideo.new(@monitor, each['key'], each['size']) }
+      trailer_results.collect { |each| TrailerVideo.new(monitor, each['key'], each['size']) }
     end
 
     def best_trailer
@@ -102,7 +105,7 @@ module TheMovieDb
     def trailer_results
       filtered = results.select { |each| each['type'].eql?('Trailer') && each['site'].eql?('YouTube') }
       if filtered.empty?
-        @monitor.no_trailers_found(self)
+        monitor.no_trailers_found(self)
       end
       filtered
     end
@@ -111,16 +114,15 @@ module TheMovieDb
   # result of calling the a search
   class Search < MovieDbApi
     def initialize(monitor, name, year)
-      super('/search/movie', "&query=#{CGI.escape(name)}&year=#{year}")
-      @monitor = monitor
+      super(monitor,'/search/movie', "&query=#{CGI.escape(name)}&year=#{year}")
       @name = name
       monitor.executing_search(self)
     end
 
     def movies
       matching_ids = no_exact_match? ? all_movie_ids : exact_title_movie_ids
-      @monitor.no_movies_found(self) if matching_ids.empty?
-      @monitor.too_many_movies_found(self, ids_and_titles_from(matching_ids)) if matching_ids.size > 1
+      monitor.no_movies_found(self) if matching_ids.empty?
+      monitor.too_many_movies_found(self, ids_and_titles_from(matching_ids)) if matching_ids.size > 1
       matching_ids.collect { |each| Movie.new(@monitor, each) }
     end
 
