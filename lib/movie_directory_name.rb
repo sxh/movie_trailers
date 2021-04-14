@@ -10,80 +10,80 @@ class Regexp
 end
 
 module MovieNas
-# Common regular expressions for movie years
-module YearRegexps
-  def year_only_regexp
-    /(19|20)\d{2}/
+  # Common regular expressions for movie years
+  module YearRegexps
+    def year_only_regexp
+      /(19|20)\d{2}/
+    end
+
+    def year_in_parens_regexp
+      /\(/ + year_only_regexp + /\)/
+    end
   end
 
-  def year_in_parens_regexp
-    /\(/ + year_only_regexp + /\)/
-  end
-end
+  # Wrapper around a particular strategy
+  class MovieDirectoryName
+    extend Forwardable
+    def_delegators :@delegate, :year, :movie
 
-# Wrapper around a particular strategy
-class MovieDirectoryName
-  extend Forwardable
-  def_delegators :@delegate, :year, :movie
-
-  def initialize(name)
-    @delegate = ParensYearName.applies_to?(name) ? ParensYearName.new(name) : DottedName.new(name)
-  end
-end
-
-# abstract class with common code
-class NameWithYear
-  attr_reader :name
-
-  def initialize(name)
-    @name = name
+    def initialize(name)
+      @delegate = ParensYearName.applies_to?(name) ? ParensYearName.new(name) : DottedName.new(name)
+    end
   end
 
-  def movie
-    @name[0..(year_index - 1)].strip
+  # abstract class with common code
+  class NameWithYear
+    attr_reader :name
+
+    def initialize(name)
+      @name = name
+    end
+
+    def movie
+      @name[0..(year_index - 1)].strip
+    end
+
+    private
+
+    def year_index
+      @name.index(year_regexp)
+    end
   end
 
-  private
+  # Something like 'Spontaneous (2020)'
+  class ParensYearName < NameWithYear
+    include YearRegexps
+    extend YearRegexps
 
-  def year_index
-    @name.index(year_regexp)
-  end
-end
+    def self.applies_to?(a_string)
+      !!a_string[year_in_parens_regexp]
+    end
 
-# Something like 'Spontaneous (2020)'
-class ParensYearName < NameWithYear
-  include YearRegexps
-  extend YearRegexps
+    def year
+      name[(year_index + 1)..(year_index + 4)].to_i
+    end
 
-  def self.applies_to?(a_string)
-    !!a_string[year_in_parens_regexp]
-  end
-
-  def year
-    name[(year_index + 1)..(year_index + 4)].to_i
+    def year_regexp
+      year_in_parens_regexp
+    end
   end
 
-  def year_regexp
-    year_in_parens_regexp
+  # names like The.Shape.of.Water.2017.1080p.BluRay.x264-SPARKS
+  class DottedName < NameWithYear
+    include YearRegexps
+
+    def initialize(name)
+      super(name.gsub('.', ' '))
+    end
+
+    def year
+      name[year_index..(year_index + 3)].to_i
+    end
+
+    private
+
+    def year_regexp
+      year_only_regexp
+    end
   end
-end
-
-# names like The.Shape.of.Water.2017.1080p.BluRay.x264-SPARKS
-class DottedName < NameWithYear
-  include YearRegexps
-
-  def initialize(name)
-    super(name.gsub('.', ' '))
-  end
-
-  def year
-    name[year_index..(year_index + 3)].to_i
-  end
-
-  private
-
-  def year_regexp
-    year_only_regexp
-  end
-end
 end
